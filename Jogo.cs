@@ -10,20 +10,25 @@ namespace sa03_brick_race
         private int pontos = 0;
         private int nivel = 1;
         private int vidas = 3;
-        private double velocidade = 200;
+        private double velocidade = 150;
         private int obstaculosDesviados = 0;
 
         private const int LARGURA_PISTA = 27;
         private const int LARGURA_PAINEL = 32;
 
-        private const int ALTURA_PISTA = 12;
-        private const int LINHA_COLISAO = 11;
+        private const int ALTURA_PISTA = 23;
+        private const int LINHA_COLISAO = ALTURA_PISTA - 4;
+
+        // --- Boost de velocidade (W ou seta pra cima) ---
+        private const double MULTIPLICADOR_BOOST = 1.75; // +75% de velocidade
+        private static readonly TimeSpan LIMIAR_BOOST = TimeSpan.FromMilliseconds(200);
+        private DateTime ultimoToqueBoost = DateTime.MinValue;
 
         private GerenciadorObstaculos gerenciadorObstaculos;
 
         public Jogo()
         {
-            gerenciadorObstaculos = new GerenciadorObstaculos(2, LINHA_COLISAO);
+            gerenciadorObstaculos = new GerenciadorObstaculos(LINHA_COLISAO);
         }
 
         public void Iniciar()
@@ -32,7 +37,9 @@ namespace sa03_brick_race
 
             while (jogoAtivo && vidas > 0)
             {
-                if (Console.KeyAvailable)
+                // Drena TODAS as teclas disponíveis nesse frame (não só uma).
+                // Isso evita que o key-repeat do W/seta-cima "engula" o A/D enquanto o boost está ativo.
+                while (Console.KeyAvailable)
                 {
                     ConsoleKeyInfo tecla = Console.ReadKey(true);
 
@@ -40,14 +47,19 @@ namespace sa03_brick_race
                         posicaoCarro = "esquerda";
                     else if (tecla.Key == ConsoleKey.RightArrow || tecla.Key == ConsoleKey.D)
                         posicaoCarro = "direita";
+                    else if (tecla.Key == ConsoleKey.UpArrow || tecla.Key == ConsoleKey.W)
+                        ultimoToqueBoost = DateTime.Now;
                     else if (tecla.Key == ConsoleKey.Escape)
                         jogoAtivo = false;
                 }
 
-                gerenciadorObstaculos.Atualizar(posicaoCarro, ref pontos, ref vidas, ref obstaculosDesviados);
+                bool acelerando = (DateTime.Now - ultimoToqueBoost) < LIMIAR_BOOST;
+                double velocidadeEfetiva = acelerando ? velocidade / MULTIPLICADOR_BOOST : velocidade;
+
+                gerenciadorObstaculos.Atualizar(posicaoCarro, nivel, ref pontos, ref vidas, ref obstaculosDesviados);
                 AtualizarNivel();
-                ExibirTela();
-                Task.Delay(TimeSpan.FromMilliseconds(velocidade)).Wait();
+                ExibirTela(acelerando);
+                Task.Delay(TimeSpan.FromMilliseconds(velocidadeEfetiva)).Wait();
             }
 
             ExibirFimDeJogo();
@@ -60,7 +72,7 @@ namespace sa03_brick_race
             if (novoNivel > nivel)
             {
                 nivel = novoNivel;
-                velocidade = Math.Max(60, 250 - (nivel - 1) * 20);
+                velocidade = Math.Max(60, 150 - (nivel - 1) * 20);
             }
         }
 
@@ -102,21 +114,30 @@ namespace sa03_brick_race
 
             foreach (Obstaculo obstaculo in gerenciadorObstaculos.Todos)
             {
-                if (obstaculo.Ativo && obstaculo.Linha == linhaAtual)
+                if (!obstaculo.Ativo)
                 {
+                    continue;
+                }
+
+                int offset = linhaAtual - obstaculo.Linha;
+                if (offset >= 0 && offset < Obstaculo.Formas.Length)
+                {
+                    string desenho = Obstaculo.Formas[offset];
+
                     if (obstaculo.Pista == "esquerda")
-                        conteudoEsquerda = Obstaculo.Forma;
+                        conteudoEsquerda = desenho;
                     else
-                        conteudoDireita = Obstaculo.Forma;
+                        conteudoDireita = desenho;
                 }
             }
 
-            int inicioCarro = ALTURA_PISTA - 4;
+            // Carro agora no formato "X", 3 linhas (mesmo formato dos obstáculos)
+            int inicioCarro = ALTURA_PISTA - 3;
 
             if (linhaAtual >= inicioCarro)
             {
                 int linhaCarro = linhaAtual - inicioCarro;
-                string[] formaCarro = { "  █", " ███", "  █", " █ █" };
+                string[] formaCarro = { " █ █", "  █ ", " █ █" };
                 string desenho = formaCarro[linhaCarro];
 
                 if (posicaoCarro == "esquerda")
@@ -128,7 +149,7 @@ namespace sa03_brick_race
             return "  │" + conteudoEsquerda.PadRight(8) + "│" + conteudoDireita.PadRight(8) + "│";
         }
 
-        private void ExibirTela()
+        private void ExibirTela(bool acelerando)
         {
             Console.Clear();
 
@@ -137,15 +158,15 @@ namespace sa03_brick_race
                 "  NIVEL   : " + nivel.ToString("D2"),
                 "  VIDAS   : " + vidas,
                 "  VELOC.  : " + velocidade + " ms",
-                "",
+                acelerando ? "  >>> BOOST ATIVO <<<" : "",
                 "",
                 "",
                 "",
                 "",
                 "  A ou seta esquerda",
                 "  D ou seta direita",
+                "  W ou seta cima = boost",
                 "  ESC = sair",
-                "",
             };
 
             Console.WriteLine(BordaTopo());
@@ -166,16 +187,16 @@ namespace sa03_brick_race
         private void ExibirFimDeJogo()
         {
             Console.Clear();
-            Console.WriteLine("╔═════════════════════════════════════════════════════╗");
-            Console.WriteLine("║               FIM DE JOGO                           ║");
-            Console.WriteLine("╠═════════════════════════════════════════════════════╣");
-            Console.WriteLine("║ Pontuacao final      : " + pontos.ToString("D6") + "                       ║");
-            Console.WriteLine("║ Nivel alcancado       : " + nivel.ToString("D2") + "                          ║");
-            Console.WriteLine("║ Obstaculos desviados  : " + obstaculosDesviados + "                           ║");
-            Console.WriteLine("║                                                     ║");
-            Console.WriteLine("║ Pressione qualquer tecla para voltar                ║");
-            Console.WriteLine("║ ao menu principal.                                  ║");
-            Console.WriteLine("╚═════════════════════════════════════════════════════╝");
+            Console.WriteLine("╔════════════════════════════════════════════════════════╗");
+            Console.WriteLine("║               FIM DE JOGO                              ║");
+            Console.WriteLine("╠════════════════════════════════════════════════════════╣");
+            Console.WriteLine("║ Pontuacao final      : " + pontos.ToString("D6") + "                          ║");
+            Console.WriteLine("║ Nivel alcancado       : " + nivel.ToString("D2") + "                             ║");
+            Console.WriteLine("║ Obstaculos desviados  : " + obstaculosDesviados + "                             ║");
+            Console.WriteLine("║                                                        ║");
+            Console.WriteLine("║ Pressione qualquer tecla para voltar                   ║");
+            Console.WriteLine("║ ao menu principal.                                     ║");
+            Console.WriteLine("╚════════════════════════════════════════════════════════╝");
             Console.ReadKey(true);
         }
     }
