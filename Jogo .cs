@@ -26,6 +26,10 @@ namespace sa03_brick_race
 
         private GerenciadorObstaculos gerenciadorObstaculos;
 
+        public int PontosFinais => pontos;
+        public int NivelFinal => nivel;
+        public int ObstaculosDesviadosFinais => obstaculosDesviados;
+
         public Jogo()
         {
             gerenciadorObstaculos = new GerenciadorObstaculos(LINHA_COLISAO);
@@ -186,18 +190,45 @@ namespace sa03_brick_race
 
         private void ExibirFimDeJogo()
         {
+            string titulo = "FIM DE JOGO";
+            string linha1 = " Pontuacao final      : " + pontos.ToString("D6");
+            string linha2 = " Nivel alcancado       : " + nivel.ToString("D2");
+            string linha3 = " Obstaculos desviados  : " + obstaculosDesviados;
+            string linha4 = " Pressione qualquer tecla para voltar";
+            string linha5 = " ao menu principal.";
+
+            int largura = titulo.Length;
+            largura = Math.Max(largura, linha1.Length);
+            largura = Math.Max(largura, linha2.Length);
+            largura = Math.Max(largura, linha3.Length);
+            largura = Math.Max(largura, linha4.Length);
+            largura = Math.Max(largura, linha5.Length);
+            largura += 4; // folga extra nas bordas
+
             Console.Clear();
-            Console.WriteLine("╔════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║               FIM DE JOGO                              ║");
-            Console.WriteLine("╠════════════════════════════════════════════════════════╣");
-            Console.WriteLine("║ Pontuacao final      : " + pontos.ToString("D6") + "                          ║");
-            Console.WriteLine("║ Nivel alcancado       : " + nivel.ToString("D2") + "                             ║");
-            Console.WriteLine("║ Obstaculos desviados  : " + obstaculosDesviados + "                             ║");
-            Console.WriteLine("║                                                        ║");
-            Console.WriteLine("║ Pressione qualquer tecla para voltar                   ║");
-            Console.WriteLine("║ ao menu principal.                                     ║");
-            Console.WriteLine("╚════════════════════════════════════════════════════════╝");
+            Console.WriteLine("╔" + new string('═', largura) + "╗");
+            Console.WriteLine(LinhaCentralizadaFim(titulo, largura));
+            Console.WriteLine("╠" + new string('═', largura) + "╣");
+            Console.WriteLine(LinhaConteudoFim(linha1, largura));
+            Console.WriteLine(LinhaConteudoFim(linha2, largura));
+            Console.WriteLine(LinhaConteudoFim(linha3, largura));
+            Console.WriteLine(LinhaConteudoFim("", largura));
+            Console.WriteLine(LinhaConteudoFim(linha4, largura));
+            Console.WriteLine(LinhaConteudoFim(linha5, largura));
+            Console.WriteLine("╚" + new string('═', largura) + "╝");
             Console.ReadKey(true);
+        }
+
+        private string LinhaConteudoFim(string conteudo, int largura)
+        {
+            return "║" + conteudo.PadRight(largura) + "║";
+        }
+
+        private string LinhaCentralizadaFim(string texto, int largura)
+        {
+            int espacosEsquerda = Math.Max(0, (largura - texto.Length) / 2);
+            string conteudo = new string(' ', espacosEsquerda) + texto;
+            return "║" + conteudo.PadRight(largura) + "║";
         }
     }
 }

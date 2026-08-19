@@ -4,6 +4,11 @@ namespace sa03_brick_race
 {
     public class Menu
     {
+        private bool houveUltimaPartida = false;
+        private int ultimoPontos;
+        private int ultimoNivel;
+        private int ultimoObstaculosDesviados;
+
         public void Mostrar()
         {
             bool isRunning = true;
@@ -18,6 +23,11 @@ namespace sa03_brick_race
                     case "1":
                         Jogo jogo = new Jogo();
                         jogo.Iniciar();
+
+                        houveUltimaPartida = true;
+                        ultimoPontos = jogo.PontosFinais;
+                        ultimoNivel = jogo.NivelFinal;
+                        ultimoObstaculosDesviados = jogo.ObstaculosDesviadosFinais;
                         break;
                     case "2":
                         MostrarInstrucoes();
@@ -86,7 +96,18 @@ namespace sa03_brick_race
         {
             Console.Clear();
             Console.WriteLine("===ÚLTIMO RESULTADO===");
-            Console.WriteLine("Nenhuma partida foi jogada ainda.");
+
+            if (!houveUltimaPartida)
+            {
+                Console.WriteLine("Nenhuma partida foi jogada ainda.");
+            }
+            else
+            {
+                Console.WriteLine("Pontuação      : " + ultimoPontos.ToString("D6"));
+                Console.WriteLine("Nível alcançado: " + ultimoNivel.ToString("D2"));
+                Console.WriteLine("Obstáculos desviados: " + ultimoObstaculosDesviados);
+            }
+
             Console.WriteLine();
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu.");
             Console.ReadKey();

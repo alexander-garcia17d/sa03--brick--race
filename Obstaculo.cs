@@ -6,7 +6,8 @@
         public int Linha { get; set; }
         public bool Ativo { get; set; }
 
-        public static readonly string Forma = " █ █";
+        // Formato em "X": diagonal cruzada, 3 linhas
+        public static readonly string[] Formas = { " █ █", "  █ ", " █ █" };
 
         public Obstaculo()
         {
